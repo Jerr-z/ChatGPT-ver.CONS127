@@ -1,18 +1,19 @@
 import openai
 import json
-from llama_index import GPTSimpleVectorIndex, SimpleDirectoryReader
+from llama_index import VectorStoreIndex, SimpleDirectoryReader
 
 
 class Chatbot:
     def __init__(self, api_key, index):
         self.index = index
+        self.query_engine = index.as_query_engine()
         openai.api_key = api_key
         self.chat_history = []
 
     def generate_response(self, user_input):
         prompt = "\n".join([f"{message['role']}: {message['content']}" for message in self.chat_history[-5:]])
         prompt += f"\nUser: {user_input}"
-        response = self.index.query(user_input)
+        response = self.query_engine.query(user_input)
 
         message = {"role": "assistant", "content": response.response}
         self.chat_history.append({"role": "user", "content": user_input})

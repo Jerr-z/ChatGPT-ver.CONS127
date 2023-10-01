@@ -1,11 +1,13 @@
 import os
 import whisper
-from llama_index import GPTSimpleVectorIndex, SimpleDirectoryReader
+from llama_index import VectorStoreIndex, SimpleDirectoryReader, set_global_service_context, ServiceContext
+from llama_index import StorageContext, load_index_from_storage
+from llama_index.llms import openai
 from chat import Chatbot
 from transcriber import transcriber
 
 # get your own api key I only got $15 in there!!!
-api_key = "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"
+api_key = "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"
 
 os.environ['OPENAI_API_KEY'] = api_key
 
@@ -31,13 +33,17 @@ def audios2txt(loa):
 
 
 def main():
+    llm = openai.OpenAI(model="gpt-3.5-turbo", temperature=0)
+    service_context = ServiceContext.from_defaults(llm=llm)
+    set_global_service_context(service_context)
 
-    try:
-        index = GPTSimpleVectorIndex.load_from_disk("index.json")
-    except:
-        documents = SimpleDirectoryReader(os.path.join(os.getcwd(), "training data")).load_data()
-        index = GPTSimpleVectorIndex.from_documents(documents)
-        index.save_to_disk("index.json")
+    # try:
+    #     storage_context = StorageContext.from_defaults(persist_dir="./storage")
+    #     index = load_index_from_storage(storage_context)
+    # except:
+    documents = SimpleDirectoryReader(os.path.join(os.getcwd(), "training data")).load_data()
+    index = VectorStoreIndex.from_documents(documents)
+    index.storage_context.persist()
 
     bot = Chatbot(api_key, index=index)
     bot.load_chat_history("chat_history.json")
